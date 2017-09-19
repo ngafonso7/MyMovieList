@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <FrameLayout
+        android:id="@+id/fl_movie_banner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true">
+        <ImageView
+            android:id="@+id/iv_movie_banner"
+            android:contentDescription="@string/content_desc_movie_banner"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:scaleType="centerCrop"
+            android:layout_gravity="top|center_horizontal"/>
+        <RatingBar
+            android:id="@+id/rb_movie_rating"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:elevation="5dp"
+            android:numStars="5"
+            android:isIndicator="true"
+            android:layout_gravity="bottom|end"/>
+    </FrameLayout>
+
+    <!-- <TextView
+        android:id="@+id/tv_detail_movie_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:textColor="@android:color/white"
+        android:layout_gravity="center_horizontal"
+        android:layout_below="@id/fl_movie_banner"
+        android:background="@drawable/border_movie_title"
+        android:padding="5dp"/> -->
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentStart="true"
+        android:layout_below="@id/fl_movie_banner">
+        <!-- android:layout_below="@id/tv_detail_movie_title" -->
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/tv_original_movie_title_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/original_movie_title_label"
+                android:paddingStart="5dp"
+                android:paddingEnd="5dp"
+                android:paddingTop="3dp"/>
+
+            <TextView
+                android:id="@+id/tv_original_movie_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_toEndOf="@id/tv_original_movie_title_label"
+                android:paddingStart="5dp"
+                android:paddingEnd="5dp"
+                android:paddingTop="3dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:id="@+id/tv_release_date_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/tv_original_movie_title_label"
+                android:text="@string/release_date_movie_label"
+                android:paddingStart="5dp"
+                android:paddingEnd="5dp"
+                android:paddingTop="3dp"/>
+
+            <TextView
+                android:id="@+id/tv_release_date"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_toEndOf="@id/tv_release_date_label"
+                android:layout_below="@id/tv_original_movie_title_label"
+                android:paddingStart="5dp"
+                android:paddingEnd="5dp"
+                android:paddingTop="3dp"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:id="@+id/tv_movie_synopsis"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/tv_release_date"
+                android:textSize="20sp"
+                android:padding="5dp" />
+
+        </RelativeLayout>
+    </ScrollView>
+
+
+</RelativeLayout>

@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">My Movie List</string>
+    <string name="error_message_no_connection">No Internet connection</string>
+    <string name="error_message_offline_server">Failure while retrive Movies information.\nTry again later…</string>
+    <string name="action_sort_menu">Sort By</string>
+    <string name="action_sort_menu_by_popular">Most Popular</string>
+    <string name="action_sort_menu_by_rate">Top Rated</string>
+    <string name="original_movie_title_label">Original Title: </string>
+    <string name="release_date_movie_label">Release Date: </string>
+
+    <string name="content_desc_movie_banner">Movie Banner</string>
+    <string name="content_desc_movie_poster">Movie Banner</string>
+</resources>
