@@ -1,13 +1,17 @@
 package com.natanael.mymovielist.activities;
 
+import android.content.Context;
 import android.content.Intent;
-import android.content.res.Configuration;
-import android.os.AsyncTask;
+import android.content.IntentFilter;
+import android.net.ConnectivityManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.DisplayMetrics;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -17,15 +21,19 @@ import android.widget.TextView;
 import com.google.gson.Gson;
 import com.natanael.mymovielist.R;
 import com.natanael.mymovielist.adapter.MovieAdapter;
+import com.natanael.mymovielist.model.LoadMovieListCallBack;
 import com.natanael.mymovielist.model.MovieDetails;
 import com.natanael.mymovielist.model.MoviesList;
+import com.natanael.mymovielist.receiver.InternetReceiver;
+import com.natanael.mymovielist.utils.EndlessRecyclerViewScrollListener;
 import com.natanael.mymovielist.utils.NetworkUtils;
 import com.natanael.mymovielist.utils.Utils;
 
-public class MainMovieListActivity extends AppCompatActivity implements MovieAdapter.ListItemClickListener{
+public class MainMovieListActivity extends AppCompatActivity
+        implements MovieAdapter.ListItemClickListener, LoadMovieListCallBack{
 
-    private static final int numberOfColums = 2;
-    private static final int numberOfColums_land = 3;
+    //private static final int numberOfColums = 2;
+    //private static final int numberOfColums_land = 3;
 
     private MovieAdapter mMovieAdapter;
     private ProgressBar mLoadingMoviesProgressBar;
@@ -39,6 +47,8 @@ public class MainMovieListActivity extends AppCompatActivity implements MovieAda
     private static final String KEY_SELECTED_SORT_BY_PARAM = "selectedSortByParam";
     private static final String KEY_MOVIE_LIST = "movieList";
 
+    private InternetReceiver internetReceiver;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -46,6 +56,7 @@ public class MainMovieListActivity extends AppCompatActivity implements MovieAda
 
         mLoadingMoviesProgressBar = (ProgressBar) findViewById(R.id.pb_loading_movies);
         mErrorMessageTextView = (TextView) findViewById(R.id.tv_error_message);
+        mMovieListSwipeRefresh = (SwipeRefreshLayout) findViewById(R.id.sr_movie_list);
 
         GridLayoutManager layoutManager = getLayoutManager();
 
@@ -55,8 +66,16 @@ public class MainMovieListActivity extends AppCompatActivity implements MovieAda
         mMovieAdapter = new MovieAdapter(this);
         mMovieListView.setAdapter(mMovieAdapter);
 
+        mMovieListView.setOnScrollListener(new EndlessRecyclerViewScrollListener(layoutManager) {
+
+            @Override
+            public void onLoadMore(int page, int totalItemsCount, RecyclerView view) {
+                refreshMovies(selectedSortByParam,page);
+            }
+        });
+
         if(savedInstanceState == null) {
-            refreshMovies(NetworkUtils.PARAM_SORT_BY_POPULAR);
+            refreshMovies(selectedSortByParam);
         } else {
             if(savedInstanceState.containsKey(KEY_MOVIE_LIST)) {
                 String movieListJson = savedInstanceState.getString(KEY_MOVIE_LIST);
@@ -70,17 +89,33 @@ public class MainMovieListActivity extends AppCompatActivity implements MovieAda
             }
         }
 
-        mMovieListSwipeRefresh = (SwipeRefreshLayout) findViewById(R.id.sr_movie_list);
         mMovieListSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                if (selectedSortByParam == NetworkUtils.PARAM_SORT_BY_POPULAR) {
-                    refreshMovies(NetworkUtils.PARAM_SORT_BY_POPULAR);
-                } else {
-                    refreshMovies(NetworkUtils.PARAM_SORT_BY_RATE);
-                }
+                refreshMovies(selectedSortByParam);
             }
         });
+
+        Handler internetHandler = new Handler() {
+            @Override
+            public void handleMessage (Message msg) {
+                if(msg.what == InternetReceiver.INTERNET_CONNECTED) {
+                    refreshMovies(selectedSortByParam);
+                } else if(msg.what == InternetReceiver.INTERNET_DISCONNECTED) {
+                    showErrorMessage(NetworkUtils.ERROR_NO_CONNECTION);
+                    mMovieListSwipeRefresh.setRefreshing(false);
+                }
+            }
+        };
+
+        internetReceiver = new InternetReceiver(internetHandler);
+        this.registerReceiver(internetReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+    }
+
+    @Override
+    protected void onDestroy() {
+        this.unregisterReceiver(internetReceiver);
+        super.onDestroy();
     }
 
     @Override
@@ -108,13 +143,17 @@ public class MainMovieListActivity extends AppCompatActivity implements MovieAda
         switch (item.getItemId()) {
             case R.id.action_sort_by_popular:
                 item.setChecked(true);
-                refreshMovies(NetworkUtils.PARAM_SORT_BY_POPULAR);
-                selectedSortByParam = NetworkUtils.PARAM_SORT_BY_POPULAR;
+                if(selectedSortByParam != NetworkUtils.PARAM_SORT_BY_POPULAR) {
+                    refreshMovies(NetworkUtils.PARAM_SORT_BY_POPULAR);
+                    selectedSortByParam = NetworkUtils.PARAM_SORT_BY_POPULAR;
+                }
                 break;
             case R.id.action_sort_by_rate:
                 item.setChecked(true);
-                refreshMovies(NetworkUtils.PARAM_SORT_BY_RATE);
-                selectedSortByParam = NetworkUtils.PARAM_SORT_BY_RATE;
+                if(selectedSortByParam != NetworkUtils.PARAM_SORT_BY_RATE) {
+                    refreshMovies(NetworkUtils.PARAM_SORT_BY_RATE);
+                    selectedSortByParam = NetworkUtils.PARAM_SORT_BY_RATE;
+                }
                 break;
         }
         return true;
@@ -127,7 +166,7 @@ public class MainMovieListActivity extends AppCompatActivity implements MovieAda
         startActivity(movieDetailsIntent);
     }
 
-    private class FetchMoviesTask extends AsyncTask<Integer, Void, String> {
+    /*public class FetchMoviesTask extends AsyncTask<Integer, Void, String> {
 
         @Override
         protected void onPreExecute() {
@@ -135,8 +174,8 @@ public class MainMovieListActivity extends AppCompatActivity implements MovieAda
         }
 
         @Override
-        protected String doInBackground(Integer... sort_by_type) {
-            return NetworkUtils.getMovieDetailsJson(sort_by_type[0]);
+        protected String doInBackground(Integer... params) {
+            return NetworkUtils.getMovieDetailsJson(params[0], params[1]);
         }
 
         @Override
@@ -144,31 +183,46 @@ public class MainMovieListActivity extends AppCompatActivity implements MovieAda
 
             mLoadingMoviesProgressBar.setVisibility(View.INVISIBLE);
 
-            allMoviesList = null;
             if (queryMoviesJson != null) {
                 if (!queryMoviesJson.startsWith("error")) {
                     Gson gson = new Gson();
-                    allMoviesList = gson.fromJson(queryMoviesJson, MoviesList.class);
-                    mErrorMessageTextView.setVisibility(View.INVISIBLE);
+                    MoviesList moviesList = gson.fromJson(queryMoviesJson, MoviesList.class);
+                    if(allMoviesList == null) {
+                        allMoviesList = moviesList;
+                        mMovieAdapter.setDataSource(allMoviesList);
+                    } else {
+                        allMoviesList.getResults().addAll(moviesList.getResults());
+                    }
+                    mMovieAdapter.notifyDataSetChanged();
+                    mErrorMessageTextView.setVisibility(View.GONE);
                 } else {
                     showErrorMessage(NetworkUtils.ERROR_SYNC_FAILURE);
                 }
             }
             mMovieListSwipeRefresh.setRefreshing(false);
-
-            mMovieAdapter.setDataSource(allMoviesList);
             mMovieAdapter.notifyDataSetChanged();
 
         }
-    }
+    }*/
 
     private void refreshMovies(int sortByParam) {
+        //Load first page of Movies
+        allMoviesList = null;
+        mMovieAdapter.notifyDataSetChanged();
+        refreshMovies(sortByParam, 1);
+    }
+
+    private void refreshMovies(int sortByParam, int page) {
         if (NetworkUtils.isInternetConnected(this)) {
-            mErrorMessageTextView.setVisibility(View.INVISIBLE);
-            FetchMoviesTask fetchMoviesTask = new FetchMoviesTask();
-            fetchMoviesTask.execute(sortByParam);
+            mErrorMessageTextView.setVisibility(View.GONE);
+            //FetchMoviesTask fetchMoviesTask = new FetchMoviesTask();
+            //fetchMoviesTask.execute(sortByParam,page);
+            mLoadingMoviesProgressBar.setVisibility(View.VISIBLE);
+            NetworkUtils networkUtils = NetworkUtils.getInstance();
+            networkUtils.getMovieDetailsJson(sortByParam, page, this);
         } else {
             showErrorMessage(NetworkUtils.ERROR_NO_CONNECTION);
+            mMovieListSwipeRefresh.setRefreshing(false);
         }
     }
 
@@ -185,18 +239,42 @@ public class MainMovieListActivity extends AppCompatActivity implements MovieAda
     }
 
     private GridLayoutManager getLayoutManager(){
-
-        GridLayoutManager layoutManager;
-
-        int orientation = this.getResources().getConfiguration().orientation;
-        if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-            layoutManager = new GridLayoutManager(this, numberOfColums);
-        } else {
-            layoutManager = new GridLayoutManager(this, numberOfColums_land);
-        }
+        GridLayoutManager layoutManager = new GridLayoutManager(this, getNumberOfColums(this));
 
         return layoutManager;
     }
 
+    private static int getNumberOfColums(Context context) {
+        DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
+        float dpWidth = displayMetrics.widthPixels / displayMetrics.density;
+        int scalingFactor = 180;
+        return (int) (dpWidth / scalingFactor);
+    }
+
+    public static int getSelectedSortByParam(){
+        return selectedSortByParam;
+    }
+
+
+    @Override
+    public void onMovieListRefresh(MoviesList movieList) {
+        mLoadingMoviesProgressBar.setVisibility(View.INVISIBLE);
+        if(allMoviesList == null) {
+            allMoviesList = movieList;
+            mMovieAdapter.setDataSource(allMoviesList);
+        } else {
+            allMoviesList.getResults().addAll(movieList.getResults());
+        }
+        mMovieAdapter.notifyDataSetChanged();
+        mErrorMessageTextView.setVisibility(View.GONE);
+
+        mMovieListSwipeRefresh.setRefreshing(false);
+    }
+
+    @Override
+    public void notifyRefreshFailure() {
+        showErrorMessage(NetworkUtils.ERROR_SYNC_FAILURE);
+        mMovieListSwipeRefresh.setRefreshing(false);
+    }
 
 }

@@ -3,34 +3,38 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <TextView
-        android:id="@+id/tv_error_message"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="top|center_horizontal"
-        android:textAlignment="center"
-        android:background="@drawable/border_movie_title"
-        android:textSize="16sp"
-        android:textColor="@android:color/white"
-        android:shadowColor="@android:color/black"
-        android:shadowDx="1.5"
-        android:shadowDy="1.3"
-        android:shadowRadius="1.6"
-        android:padding="3dp"
-        android:visibility="invisible"/>
-
-    <android.support.v4.widget.SwipeRefreshLayout
-        android:id="@+id/sr_movie_list"
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-        <android.support.v7.widget.RecyclerView
-            android:id="@+id/rc_movie_list"
+        <TextView
+            android:id="@+id/tv_error_message"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:textAlignment="center"
+            android:background="@drawable/border_movie_title"
+            android:textSize="16sp"
+            android:textColor="@android:color/white"
+            android:shadowColor="@android:color/black"
+            android:shadowDx="1.5"
+            android:shadowDy="1.3"
+            android:shadowRadius="1.6"
+            android:padding="3dp"
+            android:visibility="gone"/>
+
+        <android.support.v4.widget.SwipeRefreshLayout
+            android:id="@+id/sr_movie_list"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_gravity="top">
-        </android.support.v7.widget.RecyclerView>
-    </android.support.v4.widget.SwipeRefreshLayout>
-
+            android:layout_below="@id/tv_error_message">
+            <android.support.v7.widget.RecyclerView
+                android:id="@+id/rc_movie_list"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="top">
+            </android.support.v7.widget.RecyclerView>
+        </android.support.v4.widget.SwipeRefreshLayout>
+    </RelativeLayout>
 
 
     <ProgressBar
